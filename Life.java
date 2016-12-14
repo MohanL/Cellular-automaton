@@ -103,6 +103,7 @@ public class Life {
 // generations.
 //
 class Worker extends Thread {
+		private int threadserialnum;
     private final LifeBoard lb;
     private final Coordinator c;
     private final UI u;
@@ -122,20 +123,23 @@ class Worker extends Thread {
     //
     public void run() {
         try {
+						System.out.printf("thread #%s starts working\n", threadserialnum);
             c.register();
             try {
                 while (true) {
-                    lb.doGeneration();
+                    lb.doGeneration(threadserialnum);
                 }
             } catch(Coordinator.KilledException e) {}
         } finally {
             c.unregister();
+						System.out.printf("thread #%s ends working\n", threadserialnum);
         }
     }
 
     // Constructor
     //
-    public Worker(LifeBoard LB, Coordinator C, UI U) {
+    public Worker(int i, LifeBoard LB, Coordinator C, UI U) {
+				threadserialnum = i;
         lb = LB;
         c = C;
         u = U;
@@ -182,10 +186,11 @@ class LifeBoard extends JPanel {
     // c.register() when they start work, and c.unregister() when
     // they finish, so the Coordinator can manage them.
     //
-    public void doGeneration() throws Coordinator.KilledException {
-        for (int i = 0; i < n; i++) {
-            for (int j = 0; j < n; j++) {
 
+    public void doGeneration(int threadserialnum) throws Coordinator.KilledException {
+        for (int i = (int)(n/numThreads)*(threadserialnum-1); i < (numThreads==threadserialnum? n:(int)(n/numThreads)*threadserialnum); i++){
+						System.out.printf("thread #%s covers row %s to %s\n",threadserialnum,(int)(n/numThreads)*(threadserialnum-1),(numThreads==threadserialnum? n:(int)(n/numThreads)*threadserialnum));
+            for (int j = 0; j < n; j++) {
                 // NOTICE: you are REQUIRED to call hesitate() EVERY TIME
                 // you update a LifeBoard cell.  The call serves two
                 // purposes: (1) it checks to see whether you should pause
@@ -282,7 +287,6 @@ class LifeBoard extends JPanel {
         u = U;
         headless = hdless;
 				numThreads = numThreads;
-				System.out.printf("there are in total %s threads\n", numThreads);
 
         A = new int[n][n];  // initialized to all 0
         B = new int[n][n];  // initialized to all 0
@@ -416,8 +420,10 @@ class UI extends JPanel {
     }
 
     public void onRunClick() {
-			System.out.printf("flag 2 there are in total %s threads\n", numThreads);
-      Worker w = new Worker(lb, c, this);
-      w.start();
+			Worker [] w = new Worker[(int)numThreads];
+			for(int i= 1; i<=numThreads; i++){
+				w[i-1] = new Worker(i, lb, c, this);
+      	w[i-1].start();
+			}
     }
 }
