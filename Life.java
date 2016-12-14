@@ -190,7 +190,7 @@ class LifeBoard extends JPanel {
     public void doGeneration(int threadserialnum) throws Coordinator.KilledException {
         for (int i = (int)(n/numThreads)*(threadserialnum-1); i < (numThreads==threadserialnum? n:(int)(n/numThreads)*threadserialnum); i++){
 						System.out.printf("thread #%s covers row %s to %s\n",threadserialnum,(int)(n/numThreads)*(threadserialnum-1),(numThreads==threadserialnum? n:(int)(n/numThreads)*threadserialnum));
-            for (int j = 0; j < n; j++) {
+						for (int j = 0; j < n; j++) {
                 // NOTICE: you are REQUIRED to call hesitate() EVERY TIME
                 // you update a LifeBoard cell.  The call serves two
                 // purposes: (1) it checks to see whether you should pause
@@ -201,9 +201,20 @@ class LifeBoard extends JPanel {
                 c.hesitate();
                 int im = (i+n-1) % n; int ip = (i+1) % n;
                 int jm = (j+n-1) % n; int jp = (j+1) % n;
-                switch (B[im][jm] + B[im][j] + B[im][jp] +
+								// System.out.printf("i:%s im:%s ip:%s\n",i,im,ip);
+								int total = B[im][jm] + B[im][j] + B[im][jp] +
                         B[i][jm]             + B[i][jp] +
-                        B[ip][jm] + B[ip][j] + B[ip][jp]) {
+                        B[ip][jm] + B[ip][j] + B[ip][jp];
+								// try
+								// {total = B[im][jm] + B[im][j] + B[im][jp] +
+                //         B[i][jm]             + B[i][jp] +
+                //         B[ip][jm] + B[ip][j] + B[ip][jp];
+								// } catch (ArrayIndexOutOfBoundsException e) {
+								// 		System.out.println(e);
+								// } finally {
+								// 		System.exit(1);
+								// }
+                switch (total) {
                     case 0 :
                     case 1 : A[i][j] = 0;       break;
                     case 2 : A[i][j] = B[i][j]; break;
@@ -286,7 +297,7 @@ class LifeBoard extends JPanel {
         c = C;
         u = U;
         headless = hdless;
-				numThreads = numThreads;
+				this.numThreads = numThreads;
 
         A = new int[n][n];  // initialized to all 0
         B = new int[n][n];  // initialized to all 0
