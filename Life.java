@@ -26,7 +26,7 @@ public class Life {
     private static boolean glider = false;      // create initial glider
 
     private UI buildUI(RootPaneContainer pane) {
-        return new UI(n, pane, pauseIterations, headless, glider);
+        return new UI(n, pane, pauseIterations, headless, glider, numThreads);
     }
 
     // Print error message and exit.
@@ -155,6 +155,7 @@ class LifeBoard extends JPanel {
     private int A[][];  // scratch board
     private int T[][];  // temporary pointer
     private int generation = 0;
+		private static long numThreads = 1;
 
     // following fields are set by constructor:
     private final Coordinator c;
@@ -275,11 +276,13 @@ class LifeBoard extends JPanel {
     // Constructor
     //
     public LifeBoard(int N, Coordinator C, UI U,
-                     boolean hdless, boolean glider) {
+                     boolean hdless, boolean glider, long numThreads) {
         n = N;
         c = C;
         u = U;
         headless = hdless;
+				numThreads = numThreads;
+				System.out.printf("there are in total %s threads\n", numThreads);
 
         A = new int[n][n];  // initialized to all 0
         B = new int[n][n];  // initialized to all 0
@@ -319,10 +322,10 @@ class UI extends JPanel {
     // Constructor
     //
     public UI(int N, RootPaneContainer pane, int pauseIterations,
-              boolean headless, boolean glider) {
+              boolean headless, boolean glider, long numThreads) {
         final UI u = this;
         c = new Coordinator(pauseIterations);
-        lb = new LifeBoard(N, c, u, headless, glider);
+        lb = new LifeBoard(N, c, u, headless, glider, numThreads);
 
         final JPanel b = new JPanel();   // button panel
 
