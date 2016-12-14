@@ -14,6 +14,8 @@ import java.awt.*;          // older of the two standard Java GUIs
 import java.awt.event.*;
 import javax.swing.*;
 import java.lang.Thread.*;
+import java.util.concurrent.CyclicBarrier;
+import java.util.concurrent.BrokenBarrierException;
 
 public class Life {
     private static final int n = 100;    // number of cells on a side
@@ -107,6 +109,7 @@ class Worker extends Thread {
     private final LifeBoard lb;
     private final Coordinator c;
     private final UI u;
+		private CyclicBarrier cb;
 
     // The run() method of a Java Thread is never invoked directly by
     // user code.  Rather, it is called by the Java runtime when user
@@ -128,21 +131,27 @@ class Worker extends Thread {
             try {
                 while (true) {
                     lb.doGeneration(threadserialnum);
+										cb.await();
                 }
             } catch(Coordinator.KilledException e) {}
+						} catch (BrokenBarrierException e) {
+							e.printStackTrace();
+						} catch (InterruptedException e) {
+							e.printStackTrace();
         } finally {
             c.unregister();
-						System.out.printf("thread #%s ends working\n", threadserialnum);
         }
     }
 
     // Constructor
     //
-    public Worker(int i, LifeBoard LB, Coordinator C, UI U) {
+    public Worker(int i, LifeBoard LB, Coordinator C, UI U, CyclicBarrier cb) {
 				threadserialnum = i;
         lb = LB;
         c = C;
         u = U;
+				this.cb = cb;
+
     }
 }
 
@@ -216,20 +225,24 @@ class LifeBoard extends JPanel {
                 }
             }
         }
+				System.out.printf("thread #%s ends working\n", threadserialnum);
 				// check worker boys if they are done with their job, sure we can go to next phase.
-
-				T = B;  B = A;  A = T;
-        if (headless) {
-            if (generation % 10 == 0) {
-                System.out.println("generation " + generation
-                    + " done @ " + System.currentTimeMillis());
-            }
-            ++generation;
-        } else {
-            repaint ();
-        }
-            // tell graphic system that LifeBoard needs to be re-rendered
-    }
+				// CyclicBarrier
+				// ----------------------------------------------------------------
+				// T = B;  B = A;  A = T;
+				//
+        // if (headless) {
+        //     if (generation % 10 == 0) {
+        //         System.out.println("generation " + generation
+        //             + " done @ " + System.currentTimeMillis());
+        //     }
+        //     ++generation;
+        // } else {
+        //     repaint ();
+        // }
+        // tell graphic system that LifeBoard needs to be re-rendered
+				// -----------------------------------------------------------------
+		}
 
     // The following method is called automatically by the graphics
     // system when it thinks the LifeBoard canvas needs to be
@@ -328,6 +341,7 @@ class UI extends JPanel {
 		private long numThreads = 1;
     // Constructor
     //
+
     public UI(int N, RootPaneContainer pane, int pauseIterations,
               boolean headless, boolean glider, long numThreads) {
         final UI u = this;
@@ -422,9 +436,10 @@ class UI extends JPanel {
     }
 
     public void onRunClick() {
+			CyclicBarrier cyclicBarrier = new CyclicBarrier((int)numThreads, new Runnable() { public void run() {System.out.println("time to execute merge\n");}});
 			Worker [] w = new Worker[(int)numThreads];
 			for(int i= 1; i<=numThreads; i++){
-				w[i-1] = new Worker(i, lb, c, this);
+				w[i-1] = new Worker(i, lb, c, this,cyclicBarrier);
       	w[i-1].start();
 			}
     }
