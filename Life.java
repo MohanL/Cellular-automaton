@@ -319,12 +319,14 @@ class UI extends JPanel {
 
     private int state = stopped;
 
+		private long numThreads = 1;
     // Constructor
     //
     public UI(int N, RootPaneContainer pane, int pauseIterations,
               boolean headless, boolean glider, long numThreads) {
         final UI u = this;
         c = new Coordinator(pauseIterations);
+				this.numThreads = numThreads;
         lb = new LifeBoard(N, c, u, headless, glider, numThreads);
 
         final JPanel b = new JPanel();   // button panel
@@ -414,6 +416,7 @@ class UI extends JPanel {
     }
 
     public void onRunClick() {
+			System.out.printf("flag 2 there are in total %s threads\n", numThreads);
       Worker w = new Worker(lb, c, this);
       w.start();
     }
