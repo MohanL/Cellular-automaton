@@ -196,6 +196,20 @@ class LifeBoard extends JPanel {
     // they finish, so the Coordinator can manage them.
     //
 
+		public void merge(){
+			T = B;  B = A;  A = T;
+
+			if (headless) {
+					if (generation % 10 == 0) {
+							System.out.println("generation " + generation
+									+ " done @ " + System.currentTimeMillis());
+					}
+					++generation;
+			} else {
+					repaint ();
+			}
+		}
+
     public void doGeneration(int threadserialnum) throws Coordinator.KilledException {
         for (int i = (int)(n/numThreads)*(threadserialnum-1); i < (numThreads==threadserialnum? n:(int)(n/numThreads)*threadserialnum); i++){
 						for (int j = 0; j < n; j++) {
@@ -436,7 +450,7 @@ class UI extends JPanel {
     }
 
     public void onRunClick() {
-			CyclicBarrier cyclicBarrier = new CyclicBarrier((int)numThreads, new Runnable() { public void run() {System.out.println("time to execute merge\n");}});
+			CyclicBarrier cyclicBarrier = new CyclicBarrier((int)numThreads, new Runnable() { public void run() {System.out.println("time to execute merge\n");lb.merge();}});
 			Worker [] w = new Worker[(int)numThreads];
 			for(int i= 1; i<=numThreads; i++){
 				w[i-1] = new Worker(i, lb, c, this,cyclicBarrier);
