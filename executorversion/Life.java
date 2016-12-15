@@ -17,6 +17,7 @@ import java.lang.Thread.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.CyclicBarrier;
 
 public class Life {
     private static final int n = 100;    // number of cells on a side
@@ -110,6 +111,7 @@ class Worker implements Runnable {
     private final LifeBoard lb;
     private final Coordinator c;
     private final UI u;
+		private CyclicBarrier cb;
 
     // The run() method of a Java Thread is never invoked directly by
     // user code.  Rather, it is called by the Java runtime when user
@@ -130,6 +132,7 @@ class Worker implements Runnable {
             try {
                 while (true) {
                     lb.doGeneration(threadserialnum);
+										cb.await();
                 }
             } catch(Coordinator.KilledException e) {}
 				}
@@ -143,12 +146,12 @@ class Worker implements Runnable {
 
     // Constructor
     //
-    public Worker(int i, LifeBoard LB, Coordinator C, UI U) {
+    public Worker(int i, LifeBoard LB, Coordinator C, UI U, CyclicBarrier cb) {
 				threadserialnum = i;
         lb = LB;
         c = C;
         u = U;
-
+				this.cb = cb;
     }
 }
 
@@ -194,7 +197,7 @@ class LifeBoard extends JPanel {
     //
 
 		public void merge(){
-			T = B;  B = A;  A = T;
+			T = B;  B = A;A = T;
 
 			if (headless) {
 					if (generation % 10 == 0) {
@@ -205,12 +208,18 @@ class LifeBoard extends JPanel {
 			} else {
 					repaint ();
 			}
+			for (int i = 0; i < n; i++) {
+					for (int j = 0; j < n; j++) {
+							System.out.printf("%s ", B[i][j]);
+					}
+					System.out.println();
+			}
+			System.out.printf("executing merge, all threads ends working\n\n");
 
-			System.out.printf("all threads ends working\n\n");
 		}
 
     public void doGeneration(int threadserialnum) throws Coordinator.KilledException {
-				System.out.printf("thread #%s starts working\n", threadserialnum);
+				// System.out.printf("thread #%s starts working\n", threadserialnum);
         for (int i = (int)(n/numThreads)*(threadserialnum-1); i < (numThreads==threadserialnum? n:(int)(n/numThreads)*threadserialnum); i++){
 						for (int j = 0; j < n; j++) {
                 // NOTICE: you are REQUIRED to call hesitate() EVERY TIME
@@ -239,7 +248,7 @@ class LifeBoard extends JPanel {
                 }
             }
         }
-				System.out.printf("thread #%s ends working\n", threadserialnum);
+				// System.out.printf("thread #%s ends working\n", threadserialnum);
 				// check worker boys if they are done with their job, sure we can go to next phase.
 				// CyclicBarrier
 				// ----------------------------------------------------------------
@@ -450,20 +459,18 @@ class UI extends JPanel {
     }
 
     public void onRunClick() {
+			CyclicBarrier cyclicBarrier = new CyclicBarrier((int)numThreads, new Runnable() { public void run() {lb.merge();}});
 			ExecutorService executorService = Executors.newFixedThreadPool((int)numThreads);
-			for(int i= 1; i<=numThreads; i++){
-				executorService.execute(new Worker(i, lb, c, this));
-			}
-			executorService.shutdown();
-			System.out.println("All the threads should stop now\n\n");
 
+			for(int i= 1; i<=numThreads; i++){
+				executorService.execute(new Worker(i, lb, c, this,cyclicBarrier));
+			}
+
+			executorService.shutdown();
 			try {
 				executorService.awaitTermination(Integer.MAX_VALUE, TimeUnit.SECONDS);
 			}
 			catch (InterruptedException ie) {
-			}
-			finally{
-				lb.merge();
 			}
     }
 }

@@ -1,0 +1,329 @@
+
+<!-- saved from url=(0070)http://www.cs.rochester.edu/u/scott/courses/254/assignments/java.shtml -->
+<html><style type="text/css" id="night-mode-pro-style"></style><link type="text/css" rel="stylesheet" id="night-mode-pro-link"><head><meta http-equiv="Content-Type" content="text/html; charset=windows-1252">
+<link rel="stylesheet" type="text/css" href="./Concurrency Assignment_files/254.css">
+<title>Concurrency Assignment</title>
+<style id="style-1-cropbar-clipper">/* Copyright 2014 Evernote Corporation. All rights reserved. */
+.en-markup-crop-options {
+    top: 18px !important;
+    left: 50% !important;
+    margin-left: -100px !important;
+    width: 200px !important;
+    border: 2px rgba(255,255,255,.38) solid !important;
+    border-radius: 4px !important;
+}
+
+.en-markup-crop-options div div:first-of-type {
+    margin-left: 0px !important;
+}
+</style></head>
+
+<body>
+<style>
+body {
+    padding-left: 180}
+</style>
+
+<div id="navbar">
+    <img src="./Concurrency Assignment_files/icon.gif" alt="PLP triangle logo" align="top" border="none" width="144" height="144"><br>
+<br>
+<table>
+<tbody><tr>
+<td><img src="./Concurrency Assignment_files/clearpixel.gif" width="1" height="1">
+</td><td>
+<img src="./Concurrency Assignment_files/clearpixel.gif" width="1" height="5">
+<p align="center">
+    <a href="http://www.cs.rochester.edu/u/scott/courses/254/">Home</a>
+</p><p align="center">
+    <a href="http://www.cs.rochester.edu/u/scott/courses/254/schedule.shtml">Schedule</a>
+</p><p align="center">
+    <a href="http://www.cs.rochester.edu/u/scott/courses/254/notes/">Lecture notes</a>
+</p><p align="center">
+    <a href="http://booksite.elsevier.com/9780124104099/">PLP CS</a>
+</p><p align="center">
+    <a href="http://www.cs.rochester.edu/u/scott/courses/254/resources.shtml">Other resources</a>
+</p><p align="center">
+    <a href="http://www.cs.rochester.edu/u/scott/courses/254/policies.shtml">Policies</a>
+</p><p align="center">
+    <a href="http://www.cs.rochester.edu/u/scott/courses/254/grading.shtml">Grading </a>
+</p><p align="center">
+    <a href="http://www.cs.rochester.edu/u/scott/courses/254/index.shtml#assignments">Assignments</a>
+</p><p align="center">
+</p><p align="center"><a href="https://my.rochester.edu/">Blackboard</a><br>
+    <a href="https://learn.rochester.edu/webapps/blackboard/content/launchLink.jsp?course_id=_12781_1&amp;tool_id=_1287_1&amp;tool_type=TOOL&amp;mode=cpview&amp;mode=reset"><small>announcements</small></a><br>
+    <a href="https://learn.rochester.edu/webapps/blackboard/content/launchLink.jsp?course_id=_12781_1&amp;tool_id=_145_1&amp;tool_type=TOOL&amp;mode=cpview&amp;mode=reset"><small>discussion</small></a><br>
+    <a href="https://learn.rochester.edu/webapps/blackboard/content/launchLink.jsp?course_id=_12781_1&amp;tool_id=_158_1&amp;tool_type=TOOL&amp;mode=cpview&amp;mode=reset"><small>grades</small></a>
+  
+</p><p> <img src="./Concurrency Assignment_files/clearpixel.gif" width="140" height="1">
+</p><p> &nbsp;
+</p><p> &nbsp;
+</p></td><td><img src="./Concurrency Assignment_files/clearpixel.gif" width="1" height="1">
+</td><td bgcolor="black">
+<img src="./Concurrency Assignment_files/clearpixel.gif" width="1" height="1">
+</td></tr></tbody></table>
+</div>
+
+
+<h1>Concurrency Assignment</h1>
+<p>
+Your task in this assignment is to
+parallelize an existing implementation (in Java) of
+Conway’s game of Life.&nbsp;  The game is
+a <i>cellular automaton</i>.&nbsp;  The board consists
+of a conceptually infinite rectangular array of cells, each of which
+potentially contains an “organism” (in the version I’m
+giving you the board is a finite torus).&nbsp;  The organisms move through a
+series of “generations.”&nbsp;  If
+an organism has two or three neighbors (counting diagonals), it survives
+to the next generation.&nbsp;  If it has fewer than two neighbors it dies of
+loneliness.&nbsp;  If it has more than three neighbors it dies of overcrowding.&nbsp;
+If an empty cell has exactly three neighbors a new organism is born in
+that cell in the next generation.&nbsp;  The potential patterns on the board
+are surprisingly rich.&nbsp;  In fact, it has been shown that the game is
+Turing equivalent:&nbsp; one can build self-replicating and evolving structures
+capable of computing.&nbsp;  Additional detail can be found in Martin Gardner’s
+“Mathematical Games” column in the October 1970 issue of <i>Scientific
+American</i>.&nbsp;
+</p><p>
+The code we are giving you displays its output in a
+graphical window.&nbsp;
+There are five buttons at the bottom of the main window,
+to run, pause, stop, clear, or quit the game.&nbsp;
+When the game is stopped, you can click the mouse anywhere on the board to
+toggle cells on and off.&nbsp;  Create some initial patterns and see what sort
+of results you get.&nbsp;  Suggested examples:&nbsp;
+</p><pre>                        o     o
+          o                     o
+            o           o       o
+        o o o             o o o o
+</pre>
+(Life enthusiasts call these the glider and the spaceship.)
+<p>
+You should find that the code runs approximately 2 generations per
+second.&nbsp;
+It would run much faster, except that I have inserted a spin loop that lingers
+on each cell when updating the board.&nbsp;  This makes the animation slow
+enough to watch.&nbsp;  It’s also reminiscent of more ambitious iterative
+scientific applications in which each update is a time-consuming mathematical
+computation.&nbsp;
+Note that you are not permitted to remove or modify the spin delays, but you
+can adjust the speed of your animation by specifying a specific spin value
+with the <code>-s</code> command-line argument (see below).&nbsp;
+</p><p>
+Starting source code is available in
+<a href="http://www.cs.rochester.edu/u/scott/courses/254/assignments/java/Life.java">
+<code>Life.java</code></a>
+and
+<a href="http://www.cs.rochester.edu/u/scott/courses/254/assignments/java/Coordinator.java">
+<code>Coordinator.java</code></a>, which you can 
+view in, and save from, your browser.&nbsp;
+After you compile these with
+<code>javac</code>, you can run the result
+as <code>java Life</code>.&nbsp;
+Feel free to develop and run on any machine you like, but please make
+sure your final code will compile and run successfully with the
+<code>javac</code> and <code>java</code> on
+<code>node2x14a.csug.rochester.edu</code>.&nbsp;
+</p><p>
+Your assigned task is to create two new versions of the game in which
+the board is updated by
+a collection of <i>T</i> threads, rather than a single thread.&nbsp;
+One version will use threads directly, as was standard in Java&nbsp;2;
+the second version will use the <code>Executor</code> facilities of
+Java&nbsp;5/6/7/8.&nbsp;
+</p><p>
+With <code>N</code>
+rows of board to be updated, I suggest you allocate <code>N/T</code> contiguous
+rows to each of <code>T</code> threads in the initial (Thread-based)
+version of the code (taking appropriate care to handle round-off
+errors cleanly).&nbsp;
+In the Executor version, you can use <code>newFixedThreadPool(T)</code>
+to create an <code>Executor</code> with exactly
+<code>T</code> threads behind it.&nbsp;
+You can then experiment with varying numbers of tasks
+<code>K</code> &gt;= <code>T</code>.&nbsp;
+Do you get better performance with 
+<code>K</code> = <code>T</code>
+or
+<code>K</code> &gt;&gt; <code>T</code>?&nbsp;
+</p><p>
+For correctness, you will need to 
+make sure that your threads or tasks
+move through time generations in lock step—you don’t want
+to have one thread updating the cells in row <i>i</i> while some other
+thread is trying simultaneously to read them.&nbsp;  The easiest way to
+achieve the needed synchronization among true threads is to have them
+share an instance of <code>java.util.concurrent.CyclicBarrier</code>.&nbsp;
+In the Executor framework, you can use built-in
+<code>Executor</code> methods to force all extant tasks to complete
+before starting the next generation.&nbsp;
+</p><p>
+The code we are giving you
+accepts two optional command-line arguments:&nbsp;
+</p><dl>
+<dt><code>-s&nbsp;</code><i>num</i>
+    </dt><dd>Number of iterations of a spin loop to execute per dot when updating
+    the board.&nbsp; If unspecified, the program will attempt to
+    self-calibrate to ensure about 0.5 seconds per full-board update.&nbsp;
+    This is only approximate, however, and will vary a bit from run to
+    run, so when you’re running
+    experiments, be sure to specify an actual value (and the same one every
+    time).&nbsp;
+</dd><dt><code>-t&nbsp;</code><i>num</i>
+    </dt><dd>Number of threads (max) that should be running at any given time.&nbsp;
+    This argument is currently unused; it’s there to
+    support your parallelization efforts.&nbsp;
+</dd></dl>
+<p>
+You can run your application remotely, with X
+forwarding over <code>ssh</code>.&nbsp; You will
+probably get better results with <code>-Y</code> (insecure) forwarding
+rather than <code>-X</code>.&nbsp;
+Alternatively, sit down at a workstation in one of the CSUG labs.&nbsp;
+
+</p><h2>Machine resources</h2>
+<p>
+You will be running this assignment on
+<code>node2x14a.csug.rochester.edu</code>.&nbsp;
+This machine has two processor chips, each containing 14 cores,
+each of which has 2 hardware contexts (hyperthreads).&nbsp; This means
+the machine can execute up to 56 threads in
+parallel.&nbsp; You will probably find that your code runs faster with 2, 4, or
+even 8 threads, but probably slows down again before it gets to 32, due to
+thread creation overhead, lack of available concurrency, and/or bus,
+memory, or ALU contention.&nbsp;
+</p><p>
+Note that <code>node2x14a</code> is visible only <em>inside</em> the
+<code>csug</code> firewall.&nbsp;
+Only <code>cycle1</code>, <code>cycle2</code>, and <code>cycle3</code>
+are visible from outside.&nbsp;
+Thus to run timing experiments from outside the firewall you must first
+<code>ssh</code> to one of the <code>cycle</code> machines and
+<em>then</em> <code>ssh</code> from there to
+<code>node2x14a</code>.&nbsp;
+If you’re already in the majors lab or the Hylan lab, you can
+<code>ssh</code> directly from your desktop to
+<code>node2x14a</code>.&nbsp;
+</p><p>
+As the due date approaches, we will reserve much of the time on
+<code>node2x14a</code> for timing experiments, with a sign-up system that
+allows you to obtain exclusive access to the machine.&nbsp; Note that you
+will almost certainly not be able to get last-minute exclusive access, and
+since results of timing experiments are required for full credit on the
+assignment, you will need to plan to have your code ready for testing
+several days ahead of the due date.&nbsp;
+
+</p><h2>Analyzing speedup</h2>
+<p>
+The write-up requirements are more extensive for this assignment.&nbsp;
+In addition to parallelizing the code and describing what you did, you
+must evaluate the success of your parallelization.&nbsp;  Using
+<code>node2x14a</code>,
+create a graph that plots, for numbers of threads from 1 to
+48, the time required for a glider (see above) to travel from one corner of
+the game board to the diagonally opposite corner.&nbsp;
+(You do not necessarily have to plot every possible thread
+count—that would take a lot of experimentation time.&nbsp;  Thread
+counts of, say, 1, 2, 3, 4, 6, 8, 12, 16, 24, 32, and 48 should
+suffice.&nbsp;
+Be sure to use <code>-s</code> to specify a fixed spin count for all
+experiments.)&nbsp;
+Also plot the <i>speedup</i> of your
+code:&nbsp; the run time of the original (unmodified!) sequential version
+divided by the run time of your parallel version.&nbsp; Ideally,
+you’d see a speedup of <i>k</i> with <i>k</i> threads.&nbsp; How
+close do you come?&nbsp;  What bottleneck(s) keep you from doing
+better?&nbsp;
+
+</p><h2>Division of labor and parallelization strategy</h2>
+<p>
+As in previous assignments, you may work alone or in teams of two.&nbsp;
+If you choose to work in pairs, one possible division of labor is for one
+partner to write the Thread version and one to write the Executor
+version.&nbsp;
+If you do this, you’ll want to consult with one another frequently to
+avoid duplication of effort.&nbsp;
+</p><p>
+Be sure to follow all the rules on the <a href="http://www.cs.rochester.edu/u/scott/courses/254/grading.shtml">Grading page</a>.&nbsp; As with all assignments,
+use the turn-in script:&nbsp;
+<code>~cs254/bin/TURN_IN</code>.&nbsp; Put your write-up in a
+<code>README.pdf</code> file in the directory in
+which you run the script.&nbsp; Be sure to describe any
+features of your code that the TAs might not immediately notice.&nbsp;
+
+</p><h2>On-line resources</h2>
+<ul>
+<li> <a href="http://docs.oracle.com/javase/8/docs/">Java&nbsp;8 documentation
+</a><ul><a href="http://docs.oracle.com/javase/8/docs/">
+</a><li><a href="http://docs.oracle.com/javase/8/docs/"> </a><a href="http://docs.oracle.com/javase/tutorial/index.html">
+    Tutorial</a>
+    <ul>
+    <li>
+    <a href="http://docs.oracle.com/javase/tutorial/essential/concurrency/index.html">Concurrency
+    “trail”
+    </a></li></ul><a href="http://docs.oracle.com/javase/tutorial/essential/concurrency/index.html">
+</a></li><li><a href="http://docs.oracle.com/javase/tutorial/essential/concurrency/index.html"> </a><a href="http://docs.oracle.com/javase/specs/jls/se8/html/index.html">
+    Language Reference Manual</a>
+</li></ul>
+</li></ul>
+Please don’t print the Java documentation files; they’re big.&nbsp;
+You should be able to get along just fine reading them in a browser.&nbsp;
+
+<h2>Extra credit suggestions</h2>
+<p>
+</p><ol>
+<li>
+Add a button that will step the application exactly one generation.&nbsp;
+</li><li>
+    Modify the program so that it can read start-up configurations from
+    a file or web page.&nbsp; Can you find a way to write configurations
+    to a file?&nbsp;
+</li><li>
+    Modify the program so that it performs work at each time step
+    proportional to the number of <i>occupied</i> cells, rather than the
+    total number of cells on the board.&nbsp;
+</li><li>
+    Instead of assigning a contiguous band of rows to each thread,
+    <i>tile</i> the board into rectangular regions in such a way that
+    the total number of boundary elements is minimized.&nbsp;  (This may
+    improve cache locality, and thus performance.)&nbsp;
+</li><li>
+    Translate the code into C# and experiment with that language’s
+    concurrency features.&nbsp;
+</li></ol>
+
+<h2> Trivia assignment</h2>
+<p>
+Before the end of the day on <b>Friday, December 2</b>, send
+e-mail to to <code>cs254@csug.rochester.edu</code> containing answers to
+the following questions:&nbsp;
+</p><ol>
+<li>
+Are you working alone or in a group of two?&nbsp;
+If the latter, who is your partner?&nbsp;
+</li><li>
+Why don’t the declarations of variables <code>A</code>, <code>B</code>,
+and <code>T</code> in class <code>LifeBoard</code> specify the number of
+elements in the arrays?&nbsp;
+</li><li>
+Within class <code>LifeBoard</code> there are two calls to
+<code>repaint()</code>.&nbsp;  Where is this function defined?&nbsp;
+</li><li>
+In the original version of the code, explain the purpose of the
+<code>KilledException</code> class.&nbsp;
+Where is it thrown?&nbsp;
+Where is it caught?&nbsp;
+</li></ol>
+
+<h2> MAIN DUE DATE:</h2>
+<b>Wednesday December 14</b>, at 11:59&nbsp;pm; no extensions.&nbsp;
+
+<hr>
+
+<address>Last Change:
+    
+    29 November 2016 /
+  <img src="./Concurrency Assignment_files/scott_email_italic.jpg" align="top" border="none" alt="Michael Scott&#39;s email address"><br>
+</address>
+
+</body></html>

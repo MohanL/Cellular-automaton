@@ -14,8 +14,6 @@ import java.awt.*;          // older of the two standard Java GUIs
 import java.awt.event.*;
 import javax.swing.*;
 import java.lang.Thread.*;
-import java.util.concurrent.CyclicBarrier;
-import java.util.concurrent.BrokenBarrierException;
 
 public class Life {
     private static final int n = 100;    // number of cells on a side
@@ -28,7 +26,7 @@ public class Life {
     private static boolean glider = false;      // create initial glider
 
     private UI buildUI(RootPaneContainer pane) {
-        return new UI(n, pane, pauseIterations, headless, glider, numThreads);
+        return new UI(n, pane, pauseIterations, headless, glider);
     }
 
     // Print error message and exit.
@@ -105,11 +103,9 @@ public class Life {
 // generations.
 //
 class Worker extends Thread {
-		private int threadserialnum;
     private final LifeBoard lb;
     private final Coordinator c;
     private final UI u;
-		private CyclicBarrier cb;
 
     // The run() method of a Java Thread is never invoked directly by
     // user code.  Rather, it is called by the Java runtime when user
@@ -126,18 +122,12 @@ class Worker extends Thread {
     //
     public void run() {
         try {
-						// System.out.printf("thread #%s starts working\n", threadserialnum);
             c.register();
             try {
                 while (true) {
-                    lb.doGeneration(threadserialnum);
-										cb.await();
+                    lb.doGeneration();
                 }
             } catch(Coordinator.KilledException e) {}
-						} catch (BrokenBarrierException e) {
-							e.printStackTrace();
-						} catch (InterruptedException e) {
-							e.printStackTrace();
         } finally {
             c.unregister();
         }
@@ -145,12 +135,10 @@ class Worker extends Thread {
 
     // Constructor
     //
-    public Worker(int i, LifeBoard LB, Coordinator C, UI U, CyclicBarrier cb) {
-				threadserialnum = i;
+    public Worker(LifeBoard LB, Coordinator C, UI U) {
         lb = LB;
         c = C;
         u = U;
-				this.cb = cb;
     }
 }
 
@@ -167,7 +155,6 @@ class LifeBoard extends JPanel {
     private int A[][];  // scratch board
     private int T[][];  // temporary pointer
     private int generation = 0;
-		private static long numThreads = 1;
 
     // following fields are set by constructor:
     private final Coordinator c;
@@ -194,31 +181,10 @@ class LifeBoard extends JPanel {
     // c.register() when they start work, and c.unregister() when
     // they finish, so the Coordinator can manage them.
     //
+    public void doGeneration() throws Coordinator.KilledException {
+        for (int i = 0; i < n; i++) {
+            for (int j = 0; j < n; j++) {
 
-		public void merge(){
-			T = B;  B = A;  A = T;
-
-			if (headless) {
-					if (generation % 10 == 0) {
-							System.out.println("generation " + generation
-									+ " done @ " + System.currentTimeMillis());
-					}
-					++generation;
-			} else {
-					repaint ();
-			}
-			
-			for (int i = 0; i < n; i++) {
-					for (int j = 0; j < n; j++) {
-							System.out.printf("%s ", B[i][j]);
-					}
-					System.out.println();
-			}
-		}
-
-    public void doGeneration(int threadserialnum) throws Coordinator.KilledException {
-        for (int i = (int)(n/numThreads)*(threadserialnum-1); i < (numThreads==threadserialnum? n:(int)(n/numThreads)*threadserialnum); i++){
-						for (int j = 0; j < n; j++) {
                 // NOTICE: you are REQUIRED to call hesitate() EVERY TIME
                 // you update a LifeBoard cell.  The call serves two
                 // purposes: (1) it checks to see whether you should pause
@@ -229,10 +195,9 @@ class LifeBoard extends JPanel {
                 c.hesitate();
                 int im = (i+n-1) % n; int ip = (i+1) % n;
                 int jm = (j+n-1) % n; int jp = (j+1) % n;
-								int total = B[im][jm] + B[im][j] + B[im][jp] +
+                switch (B[im][jm] + B[im][j] + B[im][jp] +
                         B[i][jm]             + B[i][jp] +
-                        B[ip][jm] + B[ip][j] + B[ip][jp];
-                switch (total) {
+                        B[ip][jm] + B[ip][j] + B[ip][jp]) {
                     case 0 :
                     case 1 : A[i][j] = 0;       break;
                     case 2 : A[i][j] = B[i][j]; break;
@@ -245,24 +210,18 @@ class LifeBoard extends JPanel {
                 }
             }
         }
-				// System.out.printf("thread #%s ends working\n", threadserialnum);
-				// check worker boys if they are done with their job, sure we can go to next phase.
-				// CyclicBarrier
-				// ----------------------------------------------------------------
-				// T = B;  B = A;  A = T;
-				//
-        // if (headless) {
-        //     if (generation % 10 == 0) {
-        //         System.out.println("generation " + generation
-        //             + " done @ " + System.currentTimeMillis());
-        //     }
-        //     ++generation;
-        // } else {
-        //     repaint ();
-        // }
-        // tell graphic system that LifeBoard needs to be re-rendered
-				// -----------------------------------------------------------------
-		}
+        T = B;  B = A;  A = T;
+        if (headless) {
+            if (generation % 10 == 0) {
+                System.out.println("generation " + generation
+                    + " done @ " + System.currentTimeMillis());
+            }
+            ++generation;
+        } else {
+            repaint ();
+        }
+            // tell graphic system that LifeBoard needs to be re-rendered
+    }
 
     // The following method is called automatically by the graphics
     // system when it thinks the LifeBoard canvas needs to be
@@ -316,12 +275,11 @@ class LifeBoard extends JPanel {
     // Constructor
     //
     public LifeBoard(int N, Coordinator C, UI U,
-                     boolean hdless, boolean glider, long numThreads) {
+                     boolean hdless, boolean glider) {
         n = N;
         c = C;
         u = U;
         headless = hdless;
-				this.numThreads = numThreads;
 
         A = new int[n][n];  // initialized to all 0
         B = new int[n][n];  // initialized to all 0
@@ -358,16 +316,13 @@ class UI extends JPanel {
 
     private int state = stopped;
 
-		private long numThreads = 1;
     // Constructor
     //
-
     public UI(int N, RootPaneContainer pane, int pauseIterations,
-              boolean headless, boolean glider, long numThreads) {
+              boolean headless, boolean glider) {
         final UI u = this;
         c = new Coordinator(pauseIterations);
-				this.numThreads = numThreads;
-        lb = new LifeBoard(N, c, u, headless, glider, numThreads);
+        lb = new LifeBoard(N, c, u, headless, glider);
 
         final JPanel b = new JPanel();   // button panel
 
@@ -456,11 +411,7 @@ class UI extends JPanel {
     }
 
     public void onRunClick() {
-			CyclicBarrier cyclicBarrier = new CyclicBarrier((int)numThreads, new Runnable() { public void run() {lb.merge();}});
-			Worker [] w = new Worker[(int)numThreads];
-			for(int i= 1; i<=numThreads; i++){
-				w[i-1] = new Worker(i, lb, c, this,cyclicBarrier);
-      	w[i-1].start();
-			}
+      Worker w = new Worker(lb, c, this);
+      w.start();
     }
 }
