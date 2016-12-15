@@ -14,6 +14,9 @@ import java.awt.*;          // older of the two standard Java GUIs
 import java.awt.event.*;
 import javax.swing.*;
 import java.lang.Thread.*;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 
 public class Life {
     private static final int n = 100;    // number of cells on a side
@@ -26,7 +29,7 @@ public class Life {
     private static boolean glider = false;      // create initial glider
 
     private UI buildUI(RootPaneContainer pane) {
-        return new UI(n, pane, pauseIterations, headless, glider);
+        return new UI(n, pane, pauseIterations, headless, glider, numThreads);
     }
 
     // Print error message and exit.
@@ -102,7 +105,8 @@ public class Life {
 // The Worker is the thread that does the actual work of calculating new
 // generations.
 //
-class Worker extends Thread {
+class Worker implements Runnable {
+		private int threadserialnum;
     private final LifeBoard lb;
     private final Coordinator c;
     private final UI u;
@@ -125,20 +129,26 @@ class Worker extends Thread {
             c.register();
             try {
                 while (true) {
-                    lb.doGeneration();
+                    lb.doGeneration(threadserialnum);
                 }
             } catch(Coordinator.KilledException e) {}
-        } finally {
+				}
+				catch (Exception e) {
+							e.printStackTrace();
+        }
+				finally {
             c.unregister();
         }
     }
 
     // Constructor
     //
-    public Worker(LifeBoard LB, Coordinator C, UI U) {
+    public Worker(int i, LifeBoard LB, Coordinator C, UI U) {
+				threadserialnum = i;
         lb = LB;
         c = C;
         u = U;
+
     }
 }
 
@@ -155,6 +165,7 @@ class LifeBoard extends JPanel {
     private int A[][];  // scratch board
     private int T[][];  // temporary pointer
     private int generation = 0;
+		private static long numThreads = 1;
 
     // following fields are set by constructor:
     private final Coordinator c;
@@ -181,10 +192,27 @@ class LifeBoard extends JPanel {
     // c.register() when they start work, and c.unregister() when
     // they finish, so the Coordinator can manage them.
     //
-    public void doGeneration() throws Coordinator.KilledException {
-        for (int i = 0; i < n; i++) {
-            for (int j = 0; j < n; j++) {
 
+		public void merge(){
+			T = B;  B = A;  A = T;
+
+			if (headless) {
+					if (generation % 10 == 0) {
+							System.out.println("generation " + generation
+									+ " done @ " + System.currentTimeMillis());
+					}
+					++generation;
+			} else {
+					repaint ();
+			}
+
+			System.out.printf("all threads ends working\n\n");
+		}
+
+    public void doGeneration(int threadserialnum) throws Coordinator.KilledException {
+				System.out.printf("thread #%s starts working\n", threadserialnum);
+        for (int i = (int)(n/numThreads)*(threadserialnum-1); i < (numThreads==threadserialnum? n:(int)(n/numThreads)*threadserialnum); i++){
+						for (int j = 0; j < n; j++) {
                 // NOTICE: you are REQUIRED to call hesitate() EVERY TIME
                 // you update a LifeBoard cell.  The call serves two
                 // purposes: (1) it checks to see whether you should pause
@@ -195,9 +223,10 @@ class LifeBoard extends JPanel {
                 c.hesitate();
                 int im = (i+n-1) % n; int ip = (i+1) % n;
                 int jm = (j+n-1) % n; int jp = (j+1) % n;
-                switch (B[im][jm] + B[im][j] + B[im][jp] +
+								int total = B[im][jm] + B[im][j] + B[im][jp] +
                         B[i][jm]             + B[i][jp] +
-                        B[ip][jm] + B[ip][j] + B[ip][jp]) {
+                        B[ip][jm] + B[ip][j] + B[ip][jp];
+                switch (total) {
                     case 0 :
                     case 1 : A[i][j] = 0;       break;
                     case 2 : A[i][j] = B[i][j]; break;
@@ -210,18 +239,24 @@ class LifeBoard extends JPanel {
                 }
             }
         }
-        T = B;  B = A;  A = T;
-        if (headless) {
-            if (generation % 10 == 0) {
-                System.out.println("generation " + generation
-                    + " done @ " + System.currentTimeMillis());
-            }
-            ++generation;
-        } else {
-            repaint ();
-        }
-            // tell graphic system that LifeBoard needs to be re-rendered
-    }
+				System.out.printf("thread #%s ends working\n", threadserialnum);
+				// check worker boys if they are done with their job, sure we can go to next phase.
+				// CyclicBarrier
+				// ----------------------------------------------------------------
+				// T = B;  B = A;  A = T;
+				//
+        // if (headless) {
+        //     if (generation % 10 == 0) {
+        //         System.out.println("generation " + generation
+        //             + " done @ " + System.currentTimeMillis());
+        //     }
+        //     ++generation;
+        // } else {
+        //     repaint ();
+        // }
+        // tell graphic system that LifeBoard needs to be re-rendered
+				// -----------------------------------------------------------------
+		}
 
     // The following method is called automatically by the graphics
     // system when it thinks the LifeBoard canvas needs to be
@@ -275,11 +310,12 @@ class LifeBoard extends JPanel {
     // Constructor
     //
     public LifeBoard(int N, Coordinator C, UI U,
-                     boolean hdless, boolean glider) {
+                     boolean hdless, boolean glider, long numThreads) {
         n = N;
         c = C;
         u = U;
         headless = hdless;
+				this.numThreads = numThreads;
 
         A = new int[n][n];  // initialized to all 0
         B = new int[n][n];  // initialized to all 0
@@ -316,13 +352,16 @@ class UI extends JPanel {
 
     private int state = stopped;
 
+		private long numThreads = 1;
     // Constructor
     //
+
     public UI(int N, RootPaneContainer pane, int pauseIterations,
-              boolean headless, boolean glider) {
+              boolean headless, boolean glider, long numThreads) {
         final UI u = this;
         c = new Coordinator(pauseIterations);
-        lb = new LifeBoard(N, c, u, headless, glider);
+				this.numThreads = numThreads;
+        lb = new LifeBoard(N, c, u, headless, glider, numThreads);
 
         final JPanel b = new JPanel();   // button panel
 
@@ -411,7 +450,20 @@ class UI extends JPanel {
     }
 
     public void onRunClick() {
-      Worker w = new Worker(lb, c, this);
-      w.start();
+			ExecutorService executorService = Executors.newFixedThreadPool((int)numThreads);
+			for(int i= 1; i<=numThreads; i++){
+				executorService.execute(new Worker(i, lb, c, this));
+			}
+			executorService.shutdown();
+			System.out.println("All the threads should stop now\n\n");
+
+			try {
+				executorService.awaitTermination(Integer.MAX_VALUE, TimeUnit.SECONDS);
+			}
+			catch (InterruptedException ie) {
+			}
+			finally{
+				lb.merge();
+			}
     }
 }
