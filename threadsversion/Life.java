@@ -126,7 +126,7 @@ class Worker extends Thread {
     //
     public void run() {
         try {
-						System.out.printf("thread #%s starts working\n", threadserialnum);
+						// System.out.printf("thread #%s starts working\n", threadserialnum);
             c.register();
             try {
                 while (true) {
@@ -151,7 +151,6 @@ class Worker extends Thread {
         c = C;
         u = U;
 				this.cb = cb;
-
     }
 }
 
@@ -239,7 +238,7 @@ class LifeBoard extends JPanel {
                 }
             }
         }
-				System.out.printf("thread #%s ends working\n", threadserialnum);
+				// System.out.printf("thread #%s ends working\n", threadserialnum);
 				// check worker boys if they are done with their job, sure we can go to next phase.
 				// CyclicBarrier
 				// ----------------------------------------------------------------
